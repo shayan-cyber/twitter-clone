@@ -19,9 +19,9 @@ type Tweet = {
 type InfiniteTweetsListProps = {
   isLoading: boolean;
   isError: boolean;
-  hasMore: boolean;
+  hasMore?: boolean ;
   fetchNewTweets: () => Promise<unknown>;
-  tweets: Tweet[];
+  tweets: Tweet[] | undefined;
 };
 
 export function InfiniteTweetList({
@@ -30,7 +30,7 @@ export function InfiniteTweetList({
   isLoading,
   fetchNewTweets,
   hasMore,
-}: InfiniteTweetsListProps) {
+}: InfiniteTweetsListProps ) {
   if (isLoading) {
     return <h1>Loading...</h1>;
   }
@@ -49,7 +49,7 @@ export function InfiniteTweetList({
       <InfiniteScroll
         dataLength={tweets?.length}
         next={fetchNewTweets}
-        hasMore={hasMore}
+        hasMore={hasMore?hasMore:false}
         loader={"loading..."}
       >
         {tweets.map((tweet) => {
