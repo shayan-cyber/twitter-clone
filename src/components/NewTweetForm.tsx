@@ -3,6 +3,7 @@ import { Button } from "./Button"
 import { ProfileImage } from "./ProfileImage"
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { api } from "~/utils/api";
+import { Tweet } from "@prisma/client";
 
 function updateTextAreaSize(textArea:HTMLTextAreaElement|undefined){
     if(textArea==null)return ;
@@ -30,19 +31,47 @@ function Form(){
         updateTextAreaSize(textArea)
         textAreaRef.current = textArea
     },[])
+    const trpcUtils = api.useContext()
+
     useLayoutEffect(()=>{
         return updateTextAreaSize(textAreaRef.current);
     },[inputValue])
 
-   const cerateTweet = api.tweet.create.useMutation({onSuccess:(newTweet) =>{
-   
+   const createTweet = api.tweet.create.useMutation({onSuccess:(newTweet) =>{
+    
     setInputValue("")
+    if(session.status !== "authenticated")return 
+    trpcUtils.tweet.infiniteFeed.setInfiniteData({}, (old) => {
+        if(old == null || old?.pages[0] == null) return 
+
+        const newCacheTweet = {
+            ...newTweet,
+            likeCount:0,
+            likedByMe:false,
+            user:{
+                id:session.data.user.id,
+                name:session.data.user.name || null,
+                image:session.data.user.image || null
+            }
+        }
+
+        return {
+            ...old,
+            pages:[
+                {
+                    ...old.pages[0],
+                    tweets:[newCacheTweet, ...old.pages[0].tweets]
+                },
+                ...old.pages.slice(1)
+            ]
+        }
+    })
     
    }})
 
    function handleSubmit(e:FormEvent){
     e.preventDefault();
-    cerateTweet.mutate({content:inputValue})
+    createTweet.mutate({content:inputValue})
    }
 
     return <form onSubmit={handleSubmit} className="flex flex-col gap-2 border-b px-4 py-2">
